@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Menu, Input, Dropdown, Button, Icon, Table, Checkbox } from 'antd';
 
 import api from '../../services/api';
-import { Container } from './styles';
 import { ClickParam } from 'antd/lib/menu';
+
+import { Container } from './styles';
 
 const { Search } = Input;
 
@@ -40,7 +41,7 @@ const SearchPage: React.FC = () => {
 
   useEffect(() => {
     handleChangeColumn(true, { field: 'id', name: 'Field' });
-  }, [])
+  }, []) //eslint-disable-line
 
   useEffect(() => {
     if (columns.length) {
@@ -152,36 +153,44 @@ const SearchPage: React.FC = () => {
     <Container>
       <Search placeholder="Search for name" onSearch={value => { setFilteredName(value); }} enterButton />
 
-      <span>Age: </span>
-      <Dropdown overlay={ageMenuItems}>
+      <span className="filter-label">Age: </span>
+      <Dropdown className="dropdown" overlay={ageMenuItems}>
         <Button>
           {filteredAge} <Icon type="down" />
         </Button>
       </Dropdown>
 
-      <span>Sex: </span>
-      <Dropdown overlay={sexMenuItems}>
+      <br />
+
+      <span className="filter-label">Sex: </span>
+      <Dropdown className="dropdown" overlay={sexMenuItems}>
         <Button>
           {filteredSex} <Icon type="down" />
         </Button>
       </Dropdown>
 
-      <span>Sort: </span>
-      <Dropdown overlay={sortMenuItems}>
+      <br />
+
+      <span className="filter-label">Sort: </span>
+      <Dropdown className="dropdown" overlay={sortMenuItems}>
         <Button>
           {sortedInfo!.field} <Icon type="down" />
         </Button>
       </Dropdown>
 
-      <Dropdown overlay={orderMenuItems}>
+      <Dropdown  className="dropdown" overlay={orderMenuItems}>
         <Button>
           {sortedInfo!.order} <Icon type="down" />
         </Button>
       </Dropdown>
 
-      {fields.map(f => (
-        <Checkbox key={f.field} checked={columns.filter(c => c.key === f.field).length > 0} onChange={e => handleChangeColumn(e.target.checked, f)}>{f.name}</Checkbox>
-      ))}
+      <br />
+
+      <div className="table-columns-checkbox">
+        {fields.map(f => (
+          <Checkbox key={f.field} checked={columns.filter(c => c.key === f.field).length > 0} onChange={e => handleChangeColumn(e.target.checked, f)}>{f.name}</Checkbox>
+        ))}
+      </div>
 
       {columns.length ?
         (<Table dataSource={data} columns={columns} rowKey="id" />) :
