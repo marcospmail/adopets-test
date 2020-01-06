@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, Input, Dropdown, Button, Icon, Table, Checkbox } from 'antd';
+import { Menu, Input, Dropdown, Button, Icon, Table, Tag, Divider } from 'antd';
 
 import api from '../../services/api';
 import { ClickParam } from 'antd/lib/menu';
@@ -21,7 +21,7 @@ interface Column {
 }
 
 interface Sort {
-  field: string
+  field: Field
   order: string
 }
 
@@ -33,15 +33,12 @@ const fields: Field[] = [{ field: 'id', name: 'Id' }, { field: 'name', name: 'Na
 
 const SearchPage: React.FC = () => {
   const [data, setData] = useState([]);
-  const [sortedInfo, setSortedInfo] = useState<Sort>({ field: fields[0].field, order: orderOptions[0] });
+  const [sortedInfo, setSortedInfo] = useState<Sort>({ field: fields[0], order: orderOptions[0] });
   const [filteredName, setFilteredName] = useState('');
   const [filteredAge, setFilteredAge] = useState(ageOptions[0]);
   const [filteredSex, setFilteredSex] = useState(sexOptions[0]);
   const [columns, setColumns] = useState<Column[]>([]);
-
-  useEffect(() => {
-    handleChangeColumn(true, { field: 'id', name: 'Field' });
-  }, []) //eslint-disable-line
+  const [selectedColumn, setSelectedColumn] = useState<Field>(fields[0]);
 
   useEffect(() => {
     if (columns.length) {
@@ -70,9 +67,9 @@ const SearchPage: React.FC = () => {
   );
 
   const sortMenuItems = (
-    <Menu onClick={handleSortFilterClick}>
+    <Menu>
       {fields.map(f => (
-        <Menu.Item key={f.field}>
+        <Menu.Item onClick={() => handleSortFilterClick(f)} key={f.field}>
           {f.name}
         </Menu.Item>
       ))}
@@ -89,6 +86,16 @@ const SearchPage: React.FC = () => {
     </Menu>
   );
 
+  const columnsMenuItems = (
+    <Menu>
+      {fields.map(f => (
+        <Menu.Item key={f.field} onClick={() => setSelectedColumn(f)}>
+          {f.name}
+        </Menu.Item>
+      ))}
+    </Menu>
+  );
+
   function handleAgeFilterClick(e: ClickParam) {
     setFilteredAge(e.key);
   }
@@ -97,14 +104,33 @@ const SearchPage: React.FC = () => {
     setFilteredSex(e.key);
   }
 
-  function handleSortFilterClick(e: ClickParam) {
+  function handleSortFilterClick(field: Field) {
     const order = sortedInfo!.order;
-    setSortedInfo({ order, field: e.key });
+    setSortedInfo({ order, field });
   }
 
   function handleOrderFilterClick(e: ClickParam) {
     const field = sortedInfo!.field;
     setSortedInfo({ field, order: e.key });
+  }
+
+  function handleAddColumn(field: Field) {
+    console.log('handleAddColumn()');
+
+    const newColumn = {
+      title: field.name,
+      dataIndex: field.field,
+      key: field.field,
+    };
+
+    setColumns([...columns, newColumn]);
+  }
+
+  function handleRemoveColumn(key: string) {
+    console.log('handleRemoveColumn()');
+
+    const newColumns = columns.filter(column => column.key !== key);
+    setColumns(newColumns);
   }
 
   async function fetchApi() {
@@ -120,7 +146,7 @@ const SearchPage: React.FC = () => {
         _fields: ['id', ...columns.map(c => c.key)]
       },
       options: {
-        sort: [(sortedInfo.order === 'DESCEND' ? '-' : '') + sortedInfo.field],
+        sort: [(sortedInfo.order === 'DESCEND' ? '-' : '') + sortedInfo.field.field],
       }
     };
 
@@ -133,24 +159,27 @@ const SearchPage: React.FC = () => {
     setData(data.data.result);
   }
 
-  function handleChangeColumn(checked: boolean, field: Field) {
-    if (checked) {
-      const newColumn = {
-        title: field.name,
-        dataIndex: field.field,
-        key: field.field,
-      };
-
-      setColumns([...columns, newColumn]);
-    }
-    else {
-      const newColumns = columns.filter(column => column.key !== field.field);
-      setColumns(newColumns);
-    }
-  }
 
   return (
     <Container>
+
+      <span className="filter-label">Columns: </span>
+      <Dropdown className="dropdown" overlay={columnsMenuItems}>
+        <Button>
+          {selectedColumn.name} <Icon type="down" />
+        </Button>
+      </Dropdown>
+
+      <Button onClick={() => handleAddColumn(selectedColumn)}> Add</Button>
+
+      <div style={{ display: 'inline-block' }}>
+        {columns.map(c => (<Tag key={c.key} closable onClose={() => handleRemoveColumn(c.key)}>{c.title}</Tag>))}
+      </div>
+
+      <br />
+
+      <Divider orientation="left">Filters</Divider>
+
       <Search placeholder="Search for name" onSearch={value => { setFilteredName(value); }} enterButton />
 
       <span className="filter-label">Age: </span>
@@ -174,11 +203,11 @@ const SearchPage: React.FC = () => {
       <span className="filter-label">Sort: </span>
       <Dropdown className="dropdown" overlay={sortMenuItems}>
         <Button>
-          {sortedInfo!.field} <Icon type="down" />
+          {sortedInfo!.field.name} <Icon type="down" />
         </Button>
       </Dropdown>
 
-      <Dropdown  className="dropdown" overlay={orderMenuItems}>
+      <Dropdown className="dropdown" overlay={orderMenuItems}>
         <Button>
           {sortedInfo!.order} <Icon type="down" />
         </Button>
@@ -186,11 +215,6 @@ const SearchPage: React.FC = () => {
 
       <br />
 
-      <div className="table-columns-checkbox">
-        {fields.map(f => (
-          <Checkbox key={f.field} checked={columns.filter(c => c.key === f.field).length > 0} onChange={e => handleChangeColumn(e.target.checked, f)}>{f.name}</Checkbox>
-        ))}
-      </div>
 
       {columns.length ?
         (<Table dataSource={data} columns={columns} rowKey="id" />) :
