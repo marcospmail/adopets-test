@@ -1,63 +1,92 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, Input, Dropdown, Button, Icon, Table } from 'antd';
+import { Menu, Input, Dropdown, Button, Icon, Table, Checkbox } from 'antd';
 
 import api from '../../services/api';
 import { Container } from './styles';
 import { ClickParam } from 'antd/lib/menu';
-import { filter } from 'minimatch';
 
 const { Search } = Input;
+
+
+interface Field {
+  field: string
+  name: string
+}
+
+interface Column {
+  title: string
+  dataIndex: string
+  key: string
+}
+
+interface Sort {
+  field: string
+  order: string
+}
+
 const ageOptions = ['ALL', 'BABY', 'YOUNG', 'ADULT', 'SENIOR'];
-const sexOptions = ['MALE', 'FEMAKE'];
+const sexOptions = ['ALL', 'MALE', 'FEMALE'];
+const orderOptions = ['ASCEND', 'DESCEND'];
+
+const fields: Field[] = [{ field: 'id', name: 'Id' }, { field: 'name', name: 'Name' }, { field: 'price', name: 'Price' }, { field: 'sex_key', name: 'Sex' }];
 
 const SearchPage: React.FC = () => {
-  const [data, setData] = useState<[]>([]);
-  const [sortedInfo, setSortedInfo] = useState();
+  const [data, setData] = useState([]);
+  const [sortedInfo, setSortedInfo] = useState<Sort>({ field: fields[0].field, order: orderOptions[0] });
   const [filteredName, setFilteredName] = useState('');
   const [filteredAge, setFilteredAge] = useState(ageOptions[0]);
   const [filteredSex, setFilteredSex] = useState(sexOptions[0]);
-  
-  const columns = [
-    {
-      title: 'id',
-      dataIndex: 'id',
-      key: 'id',
-      sorter: (a: any, b: any) => a.id - b.id,
-      sortOrder: sortedInfo && sortedInfo.columnKey === 'id' && sortedInfo.order
-    },
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      sorter: (a: any, b: any) => a.name.length - b.name.length,
-      sortOrder: sortedInfo && sortedInfo.columnKey === 'name' && sortedInfo.order
-    },
-  ];
+  const [columns, setColumns] = useState<Column[]>([]);
 
   useEffect(() => {
-    fetchApi();
-  }, [filteredName, filteredAge])
+    handleChangeColumn(true, { field: 'id', name: 'Field' });
+  }, [])
+
+  useEffect(() => {
+    if (columns.length) {
+      fetchApi();
+    }
+  }, [filteredName, filteredAge, filteredSex, columns, sortedInfo.field, sortedInfo.order]) //eslint-disable-line
 
   const ageMenuItems = (
     <Menu onClick={handleAgeFilterClick}>
       {ageOptions.map(age => (
         <Menu.Item key={age}>
           {age}
-      </Menu.Item>
+        </Menu.Item>
       ))}
     </Menu>
   );
 
   const sexMenuItems = (
-    <Menu onClick={handleAgeFilterClick}>
-      {ageOptions.map(age => (
+    <Menu onClick={handleSexFilterClick}>
+      {sexOptions.map(age => (
         <Menu.Item key={age}>
           {age}
-      </Menu.Item>
+        </Menu.Item>
       ))}
     </Menu>
   );
 
+  const sortMenuItems = (
+    <Menu onClick={handleSortFilterClick}>
+      {fields.map(f => (
+        <Menu.Item key={f.field}>
+          {f.name}
+        </Menu.Item>
+      ))}
+    </Menu>
+  );
+
+  const orderMenuItems = (
+    <Menu onClick={handleOrderFilterClick}>
+      {orderOptions.map(o => (
+        <Menu.Item key={o}>
+          {o}
+        </Menu.Item>
+      ))}
+    </Menu>
+  );
 
   function handleAgeFilterClick(e: ClickParam) {
     setFilteredAge(e.key);
@@ -67,22 +96,30 @@ const SearchPage: React.FC = () => {
     setFilteredSex(e.key);
   }
 
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
-    setSortedInfo(sorter);
-  };
+  function handleSortFilterClick(e: ClickParam) {
+    const order = sortedInfo!.order;
+    setSortedInfo({ order, field: e.key });
+  }
+
+  function handleOrderFilterClick(e: ClickParam) {
+    const field = sortedInfo!.field;
+    setSortedInfo({ field, order: e.key });
+  }
 
   async function fetchApi() {
     const nameFilter = filteredName ? { name: filteredName } : {}
-    const ageFilter = filteredAge !== ages[0] ? { age_key: filteredAge } : {}
+    const ageFilter = filteredAge !== ageOptions[0] ? { age_key: filteredAge } : {}
+    const sexFilter = filteredSex !== sexOptions[0] ? { sex_key: filteredSex } : {}
 
     const postData: {} = {
-      "search": {
+      search: {
         ...nameFilter,
         ...ageFilter,
-        "_fields": [
-          "id",
-          "name"
-        ]
+        ...sexFilter,
+        _fields: ['id', ...columns.map(c => c.key)]
+      },
+      options: {
+        sort: [(sortedInfo.order === 'DESCEND' ? '-' : '') + sortedInfo.field],
       }
     };
 
@@ -95,9 +132,25 @@ const SearchPage: React.FC = () => {
     setData(data.data.result);
   }
 
+  function handleChangeColumn(checked: boolean, field: Field) {
+    if (checked) {
+      const newColumn = {
+        title: field.name,
+        dataIndex: field.field,
+        key: field.field,
+      };
+
+      setColumns([...columns, newColumn]);
+    }
+    else {
+      const newColumns = columns.filter(column => column.key !== field.field);
+      setColumns(newColumns);
+    }
+  }
+
   return (
     <Container>
-      <Search placeholder="Pesquisar por nome" onSearch={value => { setFilteredName(value); }} enterButton />
+      <Search placeholder="Search for name" onSearch={value => { setFilteredName(value); }} enterButton />
 
       <span>Age: </span>
       <Dropdown overlay={ageMenuItems}>
@@ -109,11 +162,31 @@ const SearchPage: React.FC = () => {
       <span>Sex: </span>
       <Dropdown overlay={sexMenuItems}>
         <Button>
-          {filteredAge} <Icon type="down" />
+          {filteredSex} <Icon type="down" />
         </Button>
       </Dropdown>
 
-      <Table dataSource={data} columns={columns} onChange={handleTableChange} rowKey={row => row.id} />;
+      <span>Sort: </span>
+      <Dropdown overlay={sortMenuItems}>
+        <Button>
+          {sortedInfo!.field} <Icon type="down" />
+        </Button>
+      </Dropdown>
+
+      <Dropdown overlay={orderMenuItems}>
+        <Button>
+          {sortedInfo!.order} <Icon type="down" />
+        </Button>
+      </Dropdown>
+
+      {fields.map(f => (
+        <Checkbox key={f.field} checked={columns.filter(c => c.key === f.field).length > 0} onChange={e => handleChangeColumn(e.target.checked, f)}>{f.name}</Checkbox>
+      ))}
+
+      {columns.length ?
+        (<Table dataSource={data} columns={columns} rowKey="id" />) :
+        (<div><span>Select at least one column</span></div>)}
+
     </Container>
   );
 }
