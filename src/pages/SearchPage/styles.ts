@@ -28,6 +28,6 @@ export const NoData = styled.div`
     display: flex; 
     align-items: center;
     justify-content: center;
-    flex: 1 1 auto;
+    flex: 1;
 `;
 

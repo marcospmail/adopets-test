@@ -6,8 +6,8 @@ import { Input, Button } from 'antd';
 
 import { sessionRequest as sessionRequestAction } from '../../store/modules/auth/actions';
 import history from '../../services/history';
-
 import { ApplicationState } from '../../store';
+
 import { Container, Content } from './styles';
 
 export const useSelector: TypedUseSelectorHook<ApplicationState> = useSelectorGeneric;
