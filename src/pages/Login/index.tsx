@@ -7,8 +7,8 @@ import { Input, Button } from 'antd';
 import { sessionRequest as sessionRequestAction } from '../../store/modules/auth/actions';
 import history from '../../services/history';
 
-import { Container, Content } from './styles';
 import { ApplicationState } from '../../store';
+import { Container, Content } from './styles';
 
 export const useSelector: TypedUseSelectorHook<ApplicationState> = useSelectorGeneric;
 export const useDispatch: () => Dispatch<Action> = useDispatchGeneric;
@@ -28,8 +28,6 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState<string>('123123');
 
   useEffect(() => {
-    console.log('aquitio ' + userAccessKey);
-
     if (userAccessKey) {
       history.push('/search');
     }

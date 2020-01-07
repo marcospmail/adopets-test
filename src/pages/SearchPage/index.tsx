@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, } from 'react';
 import { Menu, Input, Dropdown, Button, Icon, Table, Tag, Divider } from 'antd';
 
 import api from '../../services/api';
 import { ClickParam } from 'antd/lib/menu';
 
-import { Container } from './styles';
+import { Container, NoData } from './styles';
 
 const { Search } = Input;
 
@@ -29,7 +29,7 @@ const ageOptions = ['ALL', 'BABY', 'YOUNG', 'ADULT', 'SENIOR'];
 const sexOptions = ['ALL', 'MALE', 'FEMALE'];
 const orderOptions = ['ASCEND', 'DESCEND'];
 
-const fields: Field[] = [{ field: 'id', name: 'Id' }, { field: 'name', name: 'Name' }, { field: 'price', name: 'Price' }, { field: 'sex_key', name: 'Sex' }];
+const fields: Field[] = [{ field: 'id', name: 'Id' }, { field: 'name', name: 'Name' }, { field: 'price', name: 'Price' }, { field: 'sex_key', name: 'Sex' }, { field: 'age_key', name: 'Age'}];
 
 const SearchPage: React.FC = () => {
   const [data, setData] = useState([]);
@@ -115,8 +115,6 @@ const SearchPage: React.FC = () => {
   }
 
   function handleAddColumn(field: Field) {
-    console.log('handleAddColumn()');
-
     const newColumn = {
       title: field.name,
       dataIndex: field.field,
@@ -127,8 +125,6 @@ const SearchPage: React.FC = () => {
   }
 
   function handleRemoveColumn(key: string) {
-    console.log('handleRemoveColumn()');
-
     const newColumns = columns.filter(column => column.key !== key);
     setColumns(newColumns);
   }
@@ -150,75 +146,72 @@ const SearchPage: React.FC = () => {
       }
     };
 
-    console.log(postData);
-
     const { data } = await api.post('/pet/search', postData);
-
-    console.log(data);
 
     setData(data.data.result);
   }
 
-
   return (
     <Container>
 
-      <span className="filter-label">Columns: </span>
-      <Dropdown className="dropdown" overlay={columnsMenuItems}>
-        <Button>
-          {selectedColumn.name} <Icon type="down" />
-        </Button>
-      </Dropdown>
 
-      <Button onClick={() => handleAddColumn(selectedColumn)}> Add</Button>
+      <div>
+        <span className="filter-label">Columns: </span>
+        <Dropdown className="dropdown" overlay={columnsMenuItems}>
+          <Button>
+            {selectedColumn.name} <Icon type="down" />
+          </Button>
+        </Dropdown>
+        <Button onClick={() => handleAddColumn(selectedColumn)}> Add</Button>
+        <div style={{ display: 'inline-block' }}>
+          {columns.map(c => (<Tag key={c.key} closable onClose={() => handleRemoveColumn(c.key)}>{c.title}</Tag>))}
+        </div>
 
-      <div style={{ display: 'inline-block' }}>
-        {columns.map(c => (<Tag key={c.key} closable onClose={() => handleRemoveColumn(c.key)}>{c.title}</Tag>))}
       </div>
-
-      <br />
 
       <Divider orientation="left">Filters</Divider>
 
       <Search placeholder="Search for name" onSearch={value => { setFilteredName(value); }} enterButton />
 
-      <span className="filter-label">Age: </span>
-      <Dropdown className="dropdown" overlay={ageMenuItems}>
-        <Button>
-          {filteredAge} <Icon type="down" />
-        </Button>
-      </Dropdown>
+      <div>
+        <span className="filter-label">Age: </span>
+        <Dropdown className="dropdown" overlay={ageMenuItems}>
+          <Button>
+            {filteredAge} <Icon type="down" />
+          </Button>
+        </Dropdown>
 
-      <br />
+        <br />
 
-      <span className="filter-label">Sex: </span>
-      <Dropdown className="dropdown" overlay={sexMenuItems}>
-        <Button>
-          {filteredSex} <Icon type="down" />
-        </Button>
-      </Dropdown>
+        <span className="filter-label">Sex: </span>
+        <Dropdown className="dropdown" overlay={sexMenuItems}>
+          <Button>
+            {filteredSex} <Icon type="down" />
+          </Button>
+        </Dropdown>
 
-      <br />
+        <br />
 
-      <span className="filter-label">Sort: </span>
-      <Dropdown className="dropdown" overlay={sortMenuItems}>
-        <Button>
-          {sortedInfo!.field.name} <Icon type="down" />
-        </Button>
-      </Dropdown>
+        <span className="filter-label">Sort: </span>
+        <Dropdown className="dropdown" overlay={sortMenuItems}>
+          <Button>
+            {sortedInfo!.field.name} <Icon type="down" />
+          </Button>
+        </Dropdown>
 
-      <Dropdown className="dropdown" overlay={orderMenuItems}>
-        <Button>
-          {sortedInfo!.order} <Icon type="down" />
-        </Button>
-      </Dropdown>
+        <Dropdown className="dropdown" overlay={orderMenuItems}>
+          <Button>
+            {sortedInfo!.order} <Icon type="down" />
+          </Button>
+        </Dropdown>
+      </div>
 
       <br />
 
 
       {columns.length ?
         (<Table dataSource={data} columns={columns} rowKey="id" />) :
-        (<div><span>Select at least one column</span></div>)}
+        (<NoData><span>Select at least one column</span></NoData>)}
 
     </Container>
   );

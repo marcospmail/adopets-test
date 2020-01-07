@@ -12,8 +12,6 @@ const reducer: Reducer<AuthState> = (state = INITIAL_STATE, action) => {
     case AuthTypes.SESSION_REQUEST:
       return { ...state, loading: true };
     case AuthTypes.SESSION_REQUEST_SUCCEESS:
-      console.log(action);
-
       return { ...state, loading: false,  data: action.payload.auth };
     case AuthTypes.SESSION_REQUEST_FAILURE:
       return { ...state, loading: false, error: true };
